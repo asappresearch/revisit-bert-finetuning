@@ -25,7 +25,7 @@ Finally, we observe that commonly used recipes often do not allocate sufficient 
 If you find this repo useful, please cite:
 ```
 @article{revisit-bert-finetuning,
-  title={Revisiting Few-sample BERT Fine-tuning,
+  title={Revisiting Few-sample BERT Fine-tuning},
   author={Zhang, Tianyi and Wu, Felix and Katiyar, Arzoo and Weinberger, Kilian Q. and Artzi, Yoav.},
   journal={arXiv preprint arXiv:2006.05987},
   year={2019}
