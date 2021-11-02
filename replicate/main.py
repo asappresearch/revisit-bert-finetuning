@@ -18,7 +18,6 @@ def main():
                     optimizer = "--use_torch_adamw"
                 
                 output_path = "bert_output/"+ str(model) +"/"+ str(dataset) +"/SEED"+ str(seed)
-                # logs_str = "2>&1 | tee " + output_path + "/run_logs"
 
                 bash_str = ""\
                 + "python run_glue.py "\
@@ -31,7 +30,6 @@ def main():
                 + "--num_train_epochs 3.0 --warmup_ratio 0.1 --learning_rate 2e-05 "\
                 + "--output_dir " + output_path + " "\
                 + reinit\
-                # + logs_str
 
                 os.chdir("/home/jovyan/working/class_projects/nlp_11711_project/revisit-bert-finetuning")
                 os.system(bash_str)
