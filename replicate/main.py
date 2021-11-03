@@ -4,7 +4,7 @@ def main():
     datasets = ["RTE", "MRPC", "STS-B", "CoLA"]
     models = ["not_debiased", "standard_debiased", "reinit_debiased"]
 
-    for seed in range(1, 2):
+    for seed in range(25, 50):
         for dataset in datasets:
             for model in models:
                 if model == "not_debiased":
