@@ -139,11 +139,11 @@ RUN conda install --quiet --yes 'tini=0.18.0' && \
     fix-permissions /home/$NB_USER
 
 # Install bert fine-tune prerequisites
-RUN conda install --quiet --yes -c conda-forge cudatoolkit-dev=11.3 && \
-RUN conda install --quiet --yes pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch && \
-RUN conda install --quiet --yes tqdm && \
-RUN conda install --quiet --yes tensorboardx && \
-RUN conda install --quiet --yes -c conda-forge scikit-learn && \
+RUN conda install --quiet --yes -c conda-forge cudatoolkit-dev=11.3
+RUN conda install --quiet --yes pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+RUN conda install --quiet --yes tqdm
+RUN conda install --quiet --yes tensorboardx
+RUN conda install --quiet --yes -c conda-forge scikit-learn
 
 USER root
 RUN fix-permissions /home/$NB_USER

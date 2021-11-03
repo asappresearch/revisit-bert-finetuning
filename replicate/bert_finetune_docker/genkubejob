@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# This script is meant to be run inside of a running pod. It copies the config of that pod
+# (kubernetes image name, volumes, mounts, etc) into a job template that you can use to run a one-off command
+
+
+# Before using this script, make sure that you have your kube config in ~/.kube/config
+# Also make sure you have ytt on your path: https://github.com/k14s/ytt/releases
+
+# Usage:
+# Print a default kubernetes job in the local directory
+# ./autojob.sh
+# submit the job
+# ./autojob.sh | kubectl apply -f-
+# delete the job
+# ./autojob.sh | kubectl delete -f-
+# use a custom command
+# bash_command='echo "hello world!"' ./autojob.sh | kubectl apply -f-
+
+# All of the options:
+# cpu_request: integer
+# cpu_limit: integer (greater than cpu_request)
+# memory: kubernetes format (e.g. 4Gi)
+# gpus: integer
+# bash_command: command to run
+
+
+cat << 'EOF' > /tmp/template.yaml
+#@ load("@ytt:data", "data")
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: #@ data.values.name
+  namespace: #@ data.values.metadata.namespace
+spec:
+  template:
+    spec:
+      containers:
+      - env: #@ data.values.spec.containers[0].env
+        name: #@ data.values.spec.containers[0].name
+        image: #@ data.values.spec.containers[0].image
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: #@ data.values.cpu_limit
+            memory: #@ data.values.memory
+            nvidia.com/gpu: #@ data.values.gpus
+          requests:
+            cpu: #@ data.values.cpu_request
+            memory: #@ data.values.memory
+        volumeMounts: #@ data.values.spec.containers[0].volumeMounts
+        command: ["/bin/bash","-c"]
+        args: #@ data.values.args
+        workingDir: #@ data.values.workingDir
+      restartPolicy: Never
+      volumes: #@ data.values.spec.volumes
+EOF
+
+cat << 'EOF' > /tmp/add_keys.yaml
+#@data/values
+---
+#@overlay/match missing_ok=True
+workingDir:
+#@overlay/match missing_ok=True
+name:
+#@overlay/match missing_ok=True
+cpu_limit:
+#@overlay/match missing_ok=True
+cpu_request:
+#@overlay/match missing_ok=True
+memory:
+#@overlay/match missing_ok=True
+gpus:
+#@overlay/match missing_ok=True
+args:
+EOF
+
+# Get the configuration of the current image
+kubectl get pods $HOSTNAME -o yaml > /tmp/current_config.yaml
+
+# Add data/values lines to current config so ytt knows to map them into the template
+printf "#@data/values \n---\n"|cat - /tmp/current_config.yaml > /tmp/current_config_data.yaml
+
+bash_command=${bash_command:-echo \"hello world!\"}
+
+echo $command
+ytt -f /tmp/current_config_data.yaml \
+    --data-value workingDir=$PWD \
+    --data-value-yaml cpu_request=${cpu_request:-2} \
+    --data-value-yaml cpu_limit=${cpu_limit:-2} \
+    --data-value-yaml memory=${memory:-4Gi} \
+    --data-value gpus=${gpus:-0} \
+    --data-value name=${name:-myjob} \
+    --data-value-yaml "args=[$bash_command]" \
+    -f /tmp/add_keys.yaml -f /tmp/template.yaml
+
