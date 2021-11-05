@@ -31,7 +31,7 @@ def main():
                 + "--output_dir " + output_path + " "\
                 + reinit\
 
-                os.chdir("/home/jovyan/working/class_projects/nlp_11711_project/revisit-bert-finetuning")
+                os.chdir("/home/jovyan/working/class_projects/nlp_11711_project/revisit-bert-finetuning/replicate")
                 os.system(bash_str)
 
 
