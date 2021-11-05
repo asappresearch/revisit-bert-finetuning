@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from replicate_results_utils import get_test_accs, get_test_metrics, get_val_accs, debias
 
 results = pd.read_csv("replicate_results.csv")
 
@@ -13,44 +14,11 @@ datasets = [
     "STS-B",
     "CoLA",
 ]
-test_metrics = {
-    "RTE": (["test_acc"], 0),
-    "MRPC": (["test_acc", "test_f1", "test_acc_and_f1"], 1),
-    "STS-B": (["test_pearson", "test_spearmanr", "test_corr"], 1),
-    "CoLA": (["test_mcc"], 0),
-}
 
-val_metrics = {
-    "RTE": (["val_acc", "val_loss", "best_val_acc"], 0),
-    "MRPC": (["val_acc", "val_f1", "val_acc_and_f1", "val_loss", "best_val_acc"], 1),
-    "STS-B": (
-        ["val_pearson", "val_spearmanr", "val_corr", "val_loss", "best_val_spearmanr"],
-        1,
-    ),
-    "CoLA": (["val_mcc", "val_loss", "best_val_mcc"], 0),
-}
 for dataset in datasets:
     for method in ["not_debiased", "standard_debiased"]:
-        test_metric = test_metrics[dataset]
-        test_metric = test_metric[0][test_metric[1]]
-        test_df = results[
-            (results["dataset"] == dataset)
-            & (results["method"] == method)
-            & (results["filetype"] == filetype)
-        ]
-        test_df.sort_values("seed", inplace=True)
-        test_accuracies = test_df[test_metric].to_numpy()
-
-        val_metric = val_metrics[dataset]
-        val_metric = val_metric[0][val_metric[1]]
-        val_df = results[
-            (results["dataset"] == dataset)
-            & (results["method"] == method)
-            & (results["filetype"] == "raw_log")
-        ]
-        val_df = val_df[val_df["i"] == val_df["i"].max()]
-        val_df.sort_values("seed", inplace=True)
-        val_accuracies = val_df[val_metric].to_numpy()
+        test_accuracies = get_test_accs(results, dataset, method, filetype)
+        val_accuracies = get_val_accs(results, dataset, method, filetype)
 
         if dataset not in plot_values:
             plot_values[dataset] = {}
@@ -62,24 +30,14 @@ for dataset in datasets:
         for i in plot_values[dataset][method]["x"]:
             simulations = []
             for k in range(1000):
-                selection = np.random.randint(low=0, high=50, size=i)
-                max_val_acc = 0  # val_accuracies[selection[0]]
-                test_acc = 0  # test_accuracies[selection[0]]
-                for j in selection:
-                    if (
-                        val_accuracies[j] > max_val_acc
-                    ):  # or (max_val_acc != max_val_acc):
-                        max_val_acc = val_accuracies[j]
-                        test_acc = test_accuracies[j]
-                if test_acc != test_acc:
-                    test_acc = 0
-                simulations.append(test_acc)
-
+                simulations.append(debias(val_accuracies, test_accuracies, size=i))
             plot_values[dataset][method]["y"].append(np.mean(simulations))
             plot_values[dataset][method]["std"].append(np.std(simulations))
 
 # generate plot
 fig, axs = plt.subplots(1, 4, figsize=(20, 4))
+
+test_metrics = get_test_metrics()
 
 for dataset, ax in zip(datasets, axs):
     test_metric = test_metrics[dataset]
