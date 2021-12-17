@@ -12,15 +12,16 @@ class PriorWD(Optimizer):
         self.use_prior_wd = use_prior_wd
         self.exclude_last_group = exclude_last_group
 
-        self.weight_decay_by_group = []
-        for i, group in enumerate(self.param_groups):
-            self.weight_decay_by_group.append(group["weight_decay"])
-            group["weight_decay"] = 0
+        if use_prior_wd:
+            self.weight_decay_by_group = []
+            for i, group in enumerate(self.param_groups):
+                self.weight_decay_by_group.append(group["weight_decay"])
+                group["weight_decay"] = 0
 
-        self.prior_params = {}
-        for i, group in enumerate(self.param_groups):
-            for p in group["params"]:
-                self.prior_params[id(p)] = p.detach().clone()
+            self.prior_params = {}
+            for i, group in enumerate(self.param_groups):
+                for p in group["params"]:
+                    self.prior_params[id(p)] = p.detach().clone()
 
     def step(self, closure=None):
         if self.use_prior_wd:
